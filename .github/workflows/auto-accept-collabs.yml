@@ -4,11 +4,12 @@ on:
   push:
     branches:
       - master
+      - main
   schedule:
     - cron: 0 * * * *
 
 jobs:
-  file_sync:
+  auto_accept_collab:
     runs-on: ubuntu-latest
     steps:
       - name: Fetching Local Repository
