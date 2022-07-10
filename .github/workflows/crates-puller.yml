@@ -1,0 +1,22 @@
+name: crates pull
+on:
+  push:
+    branches:
+      - master
+      - main
+  schedule:
+    - cron: */15 * * * *
+
+jobs:
+  puller:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+
+      - run: cargo install $CRATES
+        env:
+          CRATES: statsd-mock
