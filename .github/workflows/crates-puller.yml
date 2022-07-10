@@ -17,6 +17,9 @@ jobs:
           profile: minimal
           toolchain: stable
 
-      - run: cargo install $CRATES
+      - run: |
+          cargo init
+          cargo add $CRATES
+          cargo fetch
         env:
           CRATES: statsd-mock
