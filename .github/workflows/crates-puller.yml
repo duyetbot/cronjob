@@ -22,4 +22,4 @@ jobs:
           cargo add $CRATES
           cargo fetch
         env:
-          CRATES: statsd-mock
+          CRATES: statsd-mock grant
