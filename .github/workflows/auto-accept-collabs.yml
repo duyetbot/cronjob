@@ -19,9 +19,3 @@ jobs:
         uses: kbrashears5/github-action-auto-accept-collabs@master
         with:
           TOKEN: ${{ secrets.TOKEN }}
-          
-      - uses: cinotify/github-action@main
-        with:
-          to: 'duyet.cs@gmail.com'
-          subject: '[duyetbot] accepted github collabs'
-          body: '[duyetbot] accepted github collabs'
