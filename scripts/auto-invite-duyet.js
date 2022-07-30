@@ -17,7 +17,7 @@ module.exports = async ({ github, context }) => {
     console.debug(`Checking repo`, repo)
 
     try {
-      console.log(`Check if ${username} is a repository collaborator ${repo.name}`)
+      console.log(`Check if ${username} is a repository collaborator ${repo.full_name}`)
       await github.rest.repos.checkCollaborator({
         owner,
         repo: repo.name,
