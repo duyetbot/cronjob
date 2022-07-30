@@ -1,4 +1,8 @@
 module.exports = async ({ github, context }) => {
+  if (!process.env.DEBUG) {
+    console.debug = () => {}
+  }
+
   const username = 'duyet'
   const owner = context.repo.owner
 
