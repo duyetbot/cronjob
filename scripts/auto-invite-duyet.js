@@ -7,10 +7,10 @@ module.exports = async ({ github, context }) => {
     type: 'owner',
     sort: 'created',
   })
-  console.log('Repos', repos)
+  console.debug('Repos', repos)
 
   for (let repo of repos.data) {
-    console.log(`Checking repo`, repo)
+    console.debug(`Checking repo`, repo)
 
     try {
       console.log(`Check if a user is a repository collaborator`)
