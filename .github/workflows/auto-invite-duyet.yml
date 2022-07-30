@@ -1,0 +1,23 @@
+# Auto invite @duyet for every new project created in this account.
+# This workflow using Github Script. Ref: https://octokit.github.io/rest.js
+
+name: Auto Invite @duyet
+
+on:
+  push:
+    branches:
+      - master
+      - main
+  schedule:
+    - cron: 0 * * * *
+
+jobs:
+  auto_invite:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/github-script@v6
+        with:
+          script: |
+            const script = require('./scripts/auto-invite-duyet.js')
+            await script({github, context})
