@@ -17,16 +17,16 @@ module.exports = async ({ github, context }) => {
     console.debug(`Checking repo`, repo)
 
     try {
-      console.log(`Check if a user is a repository collaborator`)
+      console.log(`Check if ${username} is a repository collaborator ${repo.name}`)
       await github.rest.repos.checkCollaborator({
         owner,
         repo: repo.name,
         username,
       })
-      console.log('ok')
+      console.log(' -> Yes')
     } catch (e) {
       if (e.status != 404) {
-        console.log('Unexpected error, skip')
+        console.log(' -> Unexpected error, skip')
         console.debug(e)
         continue
       }
