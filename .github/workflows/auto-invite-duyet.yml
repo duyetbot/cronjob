@@ -17,6 +17,8 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: actions/github-script@v6
+        env:
+          USER_NAME: duyet
         with:
           script: |
             const script = require('./scripts/auto-invite-duyet.js')

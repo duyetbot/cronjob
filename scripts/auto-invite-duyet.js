@@ -3,7 +3,7 @@ module.exports = async ({ github, context }) => {
     console.debug = () => {}
   }
 
-  const username = 'duyet'
+  const username = process.env.USER_NAME || 'duyet'
   const owner = context.repo.owner
 
   let repos = await github.rest.repos.listForUser({
@@ -26,7 +26,8 @@ module.exports = async ({ github, context }) => {
       console.log('ok')
     } catch (e) {
       if (e.status != 404) {
-        console.log('Unexpected error, skip', e)
+        console.log('Unexpected error, skip')
+        console.debug(e)
         continue
       }
 
