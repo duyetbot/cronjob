@@ -7,6 +7,8 @@ on:
       - main
   schedule:
     - cron: 0 * * * *
+  issue_comment:
+    types: [created, edited]
 
 jobs:
   auto_accept_collab:
