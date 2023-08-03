@@ -18,6 +18,6 @@ jobs:
         uses: actions/checkout@master
 
       - name: Auto Accept Collabs
-        uses: kbrashears5/github-action-auto-accept-collabs@master
+        uses: kbrashears5/github-action-auto-accept-collabs@main
         with:
           TOKEN: ${{ secrets.TOKEN }}
