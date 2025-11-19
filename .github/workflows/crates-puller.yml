@@ -1,25 +1,54 @@
-name: crates pull
+name: Crates Puller
+
 on:
   push:
     branches:
       - master
       - main
   schedule:
-    - cron: '*/15 * * * *'
+    # Optimized: Changed from every 15 minutes to hourly
+    # Running every 15 minutes was excessive and wasteful
+    - cron: "0 * * * *" # Run hourly at minute 0
+  workflow_dispatch: # Allow manual triggering
+
+# Prevent concurrent runs of this workflow
+concurrency:
+  group: crates-puller
+  cancel-in-progress: true # Cancel in-progress runs for this workflow
+
+permissions:
+  contents: read
 
 jobs:
   puller:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+
     steps:
-      - name: Install toolchain
-        uses: actions-rs/toolchain@v1
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
         with:
-          profile: minimal
           toolchain: stable
 
-      - run: |
-          cargo init
-          cargo add $CRATES
-          cargo fetch
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - name: Initialize cargo project and fetch crates
+        run: |
+          cargo init --name crates-puller
+          cargo add $CRATES --no-default-features
+          cargo fetch --verbose
         env:
           CRATES: statsd-mock grant
+
+      - name: Display crate information
+        run: |
+          echo "Fetched crates:"
+          cargo tree --depth 1 || true
