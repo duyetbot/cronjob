@@ -343,8 +343,3 @@ export default async ({ github, context }: ScriptParams): Promise<void> => {
     }
   }
 }
-
-// For CommonJS compatibility (GitHub Actions)
-module.exports = async ({ github, context }: ScriptParams) => {
-  return await exports.default({ github, context })
-}
