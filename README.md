@@ -5,9 +5,17 @@
 [![Auto Invite @duyet](https://github.com/duyetbot/cronjob/actions/workflows/auto-invite-duyet.yml/badge.svg)](https://github.com/duyetbot/cronjob/actions/workflows/auto-invite-duyet.yml)
 [![Crates Puller](https://github.com/duyetbot/cronjob/actions/workflows/crates-puller.yml/badge.svg)](https://github.com/duyetbot/cronjob/actions/workflows/crates-puller.yml)
 
-> Automated GitHub repository management suite powered by GitHub Actions
+> Automated GitHub repository management suite powered by **TypeScript**, **Bun**, and **GitHub Actions**
 
 A collection of intelligent automation workflows designed to streamline GitHub account management, reduce manual work, and ensure consistent repository access across projects.
+
+## 🚀 Tech Stack
+
+- **TypeScript** - Type-safe code with excellent IDE support
+- **Bun** - Ultra-fast JavaScript runtime (3x faster than Node.js)
+- **GitHub Actions** - Serverless automation platform
+- **ESLint** - Code quality enforcement
+- **Prettier** - Consistent code formatting
 
 ## Features
 
@@ -82,6 +90,11 @@ Periodically fetches specified Rust crates to keep the cargo cache warm, improvi
 
 ## Development
 
+### Prerequisites
+
+- **Bun** >= 1.0.0 ([Installation guide](https://bun.sh/docs/installation))
+- Git
+
 ### Local Setup
 
 ```bash
@@ -89,37 +102,53 @@ Periodically fetches specified Rust crates to keep the cargo cache warm, improvi
 git clone https://github.com/duyetbot/cronjob.git
 cd cronjob
 
-# Install dependencies
-npm install
+# Install dependencies with Bun (fast!)
+bun install
+```
+
+### Building
+
+```bash
+# Build TypeScript to JavaScript
+bun run build
+
+# Type check without building
+bun run type-check
 ```
 
 ### Testing
 
 ```bash
-# Run tests
-npm test
+# Run tests with Bun's built-in test runner
+bun test
 
 # Run tests with coverage
-npm run test:coverage
+bun test --coverage
 
 # Watch mode for development
-npm run test:watch
+bun test --watch
 ```
 
 ### Code Quality
 
 ```bash
-# Lint code
-npm run lint
+# Type check + lint + format check (all-in-one)
+bun run check
+
+# Lint TypeScript code
+bun run lint
 
 # Fix linting issues
-npm run lint:fix
+bun run lint:fix
 
 # Check formatting
-npm run format:check
+bun run format:check
 
 # Format code
-npm run format
+bun run format
+
+# Run full CI pipeline locally
+bun run ci
 ```
 
 ### Manual Workflow Execution
@@ -143,16 +172,21 @@ All workflows support manual triggering via `workflow_dispatch`:
 │   │   └── ci.yml
 │   └── dependabot.yml       # Automated dependency updates
 ├── scripts/
-│   └── auto-invite-duyet.js # Auto-invite automation logic
+│   ├── auto-invite-duyet.ts          # Auto-invite automation logic (TypeScript)
+│   └── auto-invite-duyet-wrapper.ts  # GitHub Actions wrapper
 ├── tests/
-│   └── auto-invite-duyet.test.js
-├── .editorconfig            # Editor configuration
-├── .eslintrc.json           # ESLint configuration
-├── .gitignore               # Git ignore rules
-├── .prettierrc.json         # Prettier configuration
-├── CLAUDE.md                # Project philosophy and guidelines
-├── package.json             # Node.js dependencies and scripts
-└── README.md                # This file
+│   └── auto-invite-duyet.test.ts     # Test suite (TypeScript)
+├── types/
+│   └── github-actions.d.ts           # Type definitions
+├── .editorconfig                     # Editor configuration
+├── .eslintrc.json                    # ESLint configuration (TypeScript)
+├── .gitignore                        # Git ignore rules
+├── .prettierrc.json                  # Prettier configuration
+├── CLAUDE.md                         # Project philosophy and guidelines
+├── tsconfig.json                     # TypeScript configuration
+├── package.json                      # Bun dependencies and scripts
+├── bun.lockb                         # Bun lock file
+└── README.md                         # This file
 ```
 
 ## Workflow Details
@@ -169,13 +203,15 @@ Uses the trusted `kbrashears5/github-action-auto-accept-collabs` action to handl
 
 ### Auto Invite @duyet
 
-Custom JavaScript implementation using GitHub's Octokit REST API.
+Custom TypeScript implementation using GitHub's Octokit REST API, powered by Bun.
 
 **Features**:
 
+- ✅ Type-safe TypeScript implementation
+- ✅ Blazing-fast execution with Bun runtime
 - ✅ Pagination for large repository lists (100 per page)
 - ✅ Rate limiting detection and exponential backoff
-- ✅ Comprehensive error handling
+- ✅ Comprehensive error handling with proper types
 - ✅ Detailed statistics tracking
 - ✅ Debug mode support
 
@@ -241,12 +277,15 @@ Ensure your `TOKEN` secret has the required permissions:
 
 1. Fork the repository
 2. Create a feature branch: `git checkout -b feature/amazing-feature`
-3. Make your changes
-4. Run tests: `npm test`
-5. Run linting: `npm run lint`
-6. Commit your changes: `git commit -m 'Add amazing feature'`
-7. Push to the branch: `git push origin feature/amazing-feature`
-8. Open a Pull Request
+3. Make your changes (TypeScript files in `scripts/` and `tests/`)
+4. Run type checking: `bun run type-check`
+5. Run tests: `bun test`
+6. Run linting: `bun run lint`
+7. Format code: `bun run format`
+8. Run full check: `bun run check`
+9. Commit your changes: `git commit -m 'Add amazing feature'`
+10. Push to the branch: `git push origin feature/amazing-feature`
+11. Open a Pull Request
 
 ## License
 

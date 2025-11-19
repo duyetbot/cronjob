@@ -27,6 +27,11 @@ dist/
 build/
 target/
 Cargo.lock
+*.tsbuildinfo
+
+# TypeScript
+*.js.map
+*.d.ts.map
 
 # Testing
 coverage/

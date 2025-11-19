@@ -3,50 +3,104 @@
  *
  * This script automatically invites a specified user to all repositories owned by an account.
  * It's designed to run as a GitHub Action and uses the GitHub API to manage collaborators.
+ *
  * @module auto-invite-duyet
  */
+
+import type { Octokit } from '@octokit/rest'
+
+/**
+ * GitHub Actions context
+ */
+interface GitHubContext {
+  repo: {
+    owner: string
+    repo: string
+  }
+}
+
+/**
+ * Script parameters from GitHub Actions
+ */
+interface ScriptParams {
+  github: Octokit
+  context: GitHubContext
+}
+
+/**
+ * Repository information from GitHub API
+ */
+interface Repository {
+  name: string
+  owner: {
+    login: string
+  }
+  full_name: string
+}
+
+/**
+ * Statistics tracking object
+ */
+interface Stats {
+  processed: number
+  invited: number
+  skipped: number
+  failed: number
+}
 
 /**
  * Configuration for debug logging
  * When DEBUG env var is not set, debug logs are suppressed
  */
 if (!process.env.DEBUG) {
-  /**
-   *
-   */
   console.debug = () => {}
 }
 
 /**
  * Sleep for a specified number of milliseconds
  * Used for rate limiting and exponential backoff
- * @param {number} ms - Milliseconds to sleep
- * @returns {Promise<void>} Promise that resolves after the specified time
+ *
+ * @param ms - Milliseconds to sleep
+ * @returns Promise that resolves after the specified time
  */
-const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+const sleep = (ms: number): Promise<void> =>
+  new Promise((resolve) => setTimeout(resolve, ms))
 
 /**
  * Handle GitHub API rate limiting with exponential backoff
- * @param {Function} fn - Async function to retry
- * @param {number} maxRetries - Maximum number of retry attempts
- * @param {number} baseDelay - Base delay in milliseconds for exponential backoff
- * @returns {Promise<*>} Result of the function call
- * @throws {Error} If all retries are exhausted
+ *
+ * @param fn - Async function to retry
+ * @param maxRetries - Maximum number of retry attempts
+ * @param baseDelay - Base delay in milliseconds for exponential backoff
+ * @returns Result of the function call
+ * @throws Error if all retries are exhausted
  */
-const withRateLimitRetry = async (fn, maxRetries = 3, baseDelay = 1000) => {
-  let lastError
+const withRateLimitRetry = async <T>(
+  fn: () => Promise<T>,
+  maxRetries = 3,
+  baseDelay = 1000
+): Promise<T> => {
+  let lastError: Error | undefined
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
       return await fn()
     } catch (error) {
-      lastError = error
+      lastError = error as Error
 
       // Check if this is a rate limit error
-      if (error.status === 403 && error.response?.headers?.['x-ratelimit-remaining'] === '0') {
-        const resetTime = error.response.headers['x-ratelimit-reset']
+      const errorWithStatus = error as { status?: number; response?: unknown }
+      const response = errorWithStatus.response as
+        | { headers?: { 'x-ratelimit-remaining'?: string; 'x-ratelimit-reset'?: string } }
+        | undefined
+
+      if (
+        errorWithStatus.status === 403 &&
+        response?.headers?.['x-ratelimit-remaining'] === '0'
+      ) {
+        const resetTime = response.headers['x-ratelimit-reset']
         const waitTime = resetTime
-          ? (resetTime * 1000 - Date.now()) / 1000
+          ? (parseInt(resetTime) * 1000 - Date.now()) / 1000
           : baseDelay * 2 ** attempt
 
         console.log(
@@ -61,7 +115,7 @@ const withRateLimitRetry = async (fn, maxRetries = 3, baseDelay = 1000) => {
         const waitTime = baseDelay * 2 ** attempt
         console.debug(
           `Retry ${attempt + 1}/${maxRetries} after ${waitTime}ms due to:`,
-          error.message
+          (error as Error).message
         )
         await sleep(waitTime)
       }
@@ -73,12 +127,16 @@ const withRateLimitRetry = async (fn, maxRetries = 3, baseDelay = 1000) => {
 
 /**
  * Fetch all repositories with pagination support
- * @param {object} github - GitHub API client (Octokit)
- * @param {string} owner - Repository owner username
- * @returns {Promise<Array>} Array of all repositories
+ *
+ * @param github - GitHub API client (Octokit)
+ * @param owner - Repository owner username
+ * @returns Array of all repositories
  */
-const fetchAllRepositories = async (github, owner) => {
-  const repositories = []
+const fetchAllRepositories = async (
+  github: Octokit,
+  owner: string
+): Promise<Repository[]> => {
+  const repositories: Repository[] = []
   let page = 1
   const perPage = 100
 
@@ -97,7 +155,7 @@ const fetchAllRepositories = async (github, owner) => {
     })
 
     console.debug(`Fetched page ${page}: ${response.data.length} repositories`)
-    repositories.push(...response.data)
+    repositories.push(...(response.data as Repository[]))
 
     // Check if we've received all repositories
     if (response.data.length < perPage) {
@@ -113,13 +171,19 @@ const fetchAllRepositories = async (github, owner) => {
 
 /**
  * Check if a user is already a collaborator on a repository
- * @param {object} github - GitHub API client (Octokit)
- * @param {string} owner - Repository owner
- * @param {string} repo - Repository name
- * @param {string} username - Username to check
- * @returns {Promise<boolean>} True if user is a collaborator, false otherwise
+ *
+ * @param github - GitHub API client (Octokit)
+ * @param owner - Repository owner
+ * @param repo - Repository name
+ * @param username - Username to check
+ * @returns True if user is a collaborator, false otherwise
  */
-const isCollaborator = async (github, owner, repo, username) => {
+const isCollaborator = async (
+  github: Octokit,
+  owner: string,
+  repo: string,
+  username: string
+): Promise<boolean> => {
   try {
     await withRateLimitRetry(async () => {
       return await github.rest.repos.checkCollaborator({
@@ -130,7 +194,8 @@ const isCollaborator = async (github, owner, repo, username) => {
     })
     return true
   } catch (error) {
-    if (error.status === 404) {
+    const errorWithStatus = error as { status?: number }
+    if (errorWithStatus.status === 404) {
       return false
     }
     throw error
@@ -139,13 +204,19 @@ const isCollaborator = async (github, owner, repo, username) => {
 
 /**
  * Invite a user to a repository
- * @param {object} github - GitHub API client (Octokit)
- * @param {string} owner - Repository owner
- * @param {string} repo - Repository name
- * @param {string} username - Username to invite
- * @returns {Promise<object>} Invitation response
+ *
+ * @param github - GitHub API client (Octokit)
+ * @param owner - Repository owner
+ * @param repo - Repository name
+ * @param username - Username to invite
+ * @returns Invitation response
  */
-const inviteCollaborator = async (github, owner, repo, username) => {
+const inviteCollaborator = async (
+  github: Octokit,
+  owner: string,
+  repo: string,
+  username: string
+): Promise<unknown> => {
   return await withRateLimitRetry(async () => {
     return await github.rest.repos.addCollaborator({
       owner,
@@ -158,13 +229,18 @@ const inviteCollaborator = async (github, owner, repo, username) => {
 
 /**
  * Process a single repository: check and invite user if needed
- * @param {object} github - GitHub API client (Octokit)
- * @param {object} repo - Repository object from GitHub API
- * @param {string} username - Username to invite
- * @param {object} stats - Statistics object to track successes and failures
- * @returns {Promise<void>}
+ *
+ * @param github - GitHub API client (Octokit)
+ * @param repo - Repository object from GitHub API
+ * @param username - Username to invite
+ * @param stats - Statistics object to track successes and failures
  */
-const processRepository = async (github, repo, username, stats) => {
+const processRepository = async (
+  github: Octokit,
+  repo: Repository,
+  username: string,
+  stats: Stats
+): Promise<void> => {
   const { owner, name: repoName, full_name: fullName } = repo
 
   try {
@@ -181,10 +257,10 @@ const processRepository = async (github, repo, username, stats) => {
     console.log(`  → Inviting ${username} to ${fullName}...`)
     const response = await inviteCollaborator(github, owner.login, repoName, username)
 
-    console.log(`  ✓ Invitation sent (status: ${response.status})`)
+    console.log(`  ✓ Invitation sent (status: ${(response as { status?: number }).status})`)
     stats.invited++
   } catch (error) {
-    console.error(`  ✗ Failed to process ${fullName}:`, error.message)
+    console.error(`  ✗ Failed to process ${fullName}:`, (error as Error).message)
     console.debug('Full error:', error)
     stats.failed++
   } finally {
@@ -194,12 +270,10 @@ const processRepository = async (github, repo, username, stats) => {
 
 /**
  * Main entry point for the auto-invite script
- * @param {object} params - Parameters object
- * @param {object} params.github - GitHub API client (Octokit) from github-script action
- * @param {object} params.context - GitHub Actions context
- * @returns {Promise<void>}
+ *
+ * @param params - Parameters object containing GitHub client and context
  */
-module.exports = async ({ github, context }) => {
+export default async ({ github, context }: ScriptParams): Promise<void> => {
   const startTime = Date.now()
 
   // Validate and get configuration
@@ -222,7 +296,7 @@ module.exports = async ({ github, context }) => {
   console.log('='.repeat(60))
 
   // Statistics tracking
-  const stats = {
+  const stats: Stats = {
     processed: 0,
     invited: 0,
     skipped: 0,
@@ -245,7 +319,7 @@ module.exports = async ({ github, context }) => {
       await processRepository(github, repo, username, stats)
     }
   } catch (error) {
-    console.error('\n❌ Fatal error during execution:', error.message)
+    console.error('\n❌ Fatal error during execution:', (error as Error).message)
     console.debug('Full error:', error)
     throw error
   } finally {
@@ -268,4 +342,9 @@ module.exports = async ({ github, context }) => {
       console.warn(`⚠️  Warning: ${stats.failed} repositories failed to process`)
     }
   }
+}
+
+// For CommonJS compatibility (GitHub Actions)
+module.exports = async ({ github, context }: ScriptParams) => {
+  return await exports.default({ github, context })
 }
