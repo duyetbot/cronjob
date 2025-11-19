@@ -252,7 +252,7 @@ module.exports = async ({ github, context }) => {
     // Print summary
     const duration = ((Date.now() - startTime) / 1000).toFixed(2)
 
-    console.log(`\n${  '='.repeat(60)}`)
+    console.log(`\n${'='.repeat(60)}`)
     console.log('Execution Summary')
     console.log('='.repeat(60))
     console.log(`Total processed:  ${stats.processed}`)
