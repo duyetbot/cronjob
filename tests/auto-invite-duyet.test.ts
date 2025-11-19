@@ -2,16 +2,27 @@
  * @bun test
  */
 
-import { describe, it, expect, beforeEach, afterEach, jest, mock } from 'bun:test'
+// @ts-nocheck - Test file with extensive mocking, type assertions are complex
+import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach, jest, mock } from 'bun:test'
 import type { Octokit } from '../types/github-actions'
 import type { GitHubContext } from '../types/github-actions'
-
-// Mock timers to avoid actual delays in tests
-jest.useFakeTimers()
 
 // Dynamic import for the module under test
 const autoInviteModule = await import('../scripts/auto-invite-duyet')
 const autoInvite = autoInviteModule.default
+
+// Mock setTimeout to make tests faster
+const originalSetTimeout = global.setTimeout
+beforeAll(() => {
+  global.setTimeout = ((fn: () => void) => {
+    fn()
+    return 0 as any
+  }) as any
+})
+
+afterAll(() => {
+  global.setTimeout = originalSetTimeout
+})
 
 describe('auto-invite-duyet', () => {
   let mockGithub: Partial<Octokit>
@@ -62,9 +73,8 @@ describe('auto-invite-duyet', () => {
     consoleErrorSpy.mockRestore()
     consoleDebugSpy.mockRestore()
 
-    // Clear all mocks and timers
+    // Clear all mocks
     jest.clearAllMocks()
-    jest.clearAllTimers()
   })
 
   describe('Environment validation', () => {
@@ -186,9 +196,7 @@ describe('auto-invite-duyet', () => {
         status: 201,
       })
 
-      const promise = autoInvite({ github: mockGithub as Octokit, context: mockContext })
-      await jest.runAllTimersAsync()
-      await promise
+      await autoInvite({ github: mockGithub as Octokit, context: mockContext })
 
       expect(addCollaborator).toHaveBeenCalledWith({
         owner: 'testowner',
@@ -232,9 +240,7 @@ describe('auto-invite-duyet', () => {
         .mockRejectedValueOnce(networkError) // All retries fail
         .mockResolvedValueOnce({}) // Second repo succeeds
 
-      const promise = autoInvite({ github: mockGithub as Octokit, context: mockContext })
-      await jest.runAllTimersAsync()
-      await promise
+      await autoInvite({ github: mockGithub as Octokit, context: mockContext })
 
       // Should attempt both repositories despite first one failing after retries
       expect(checkCollaborator).toHaveBeenCalled()
@@ -253,14 +259,16 @@ describe('auto-invite-duyet', () => {
 
       const checkCollaborator = mockGithub.rest!.repos!
         .checkCollaborator as ReturnType<typeof mock>
-      checkCollaborator.mockRejectedValueOnce(rateLimitError).mockResolvedValueOnce({})
+      // repo1: rate limit then success, repo2: success
+      checkCollaborator
+        .mockRejectedValueOnce(rateLimitError) // repo1 first attempt
+        .mockResolvedValueOnce({}) // repo1 retry
+        .mockResolvedValueOnce({}) // repo2
 
-      const promise = autoInvite({ github: mockGithub as Octokit, context: mockContext })
-      await jest.runAllTimersAsync()
-      await promise
+      await autoInvite({ github: mockGithub as Octokit, context: mockContext })
 
-      // Should retry after rate limit
-      expect(checkCollaborator).toHaveBeenCalledTimes(2)
+      // Should retry after rate limit (3 total: repo1 x2, repo2 x1)
+      expect(checkCollaborator).toHaveBeenCalledTimes(3)
     })
   })
 
@@ -297,9 +305,7 @@ describe('auto-invite-duyet', () => {
       const addCollaborator = mockGithub.rest!.repos!.addCollaborator as ReturnType<typeof mock>
       addCollaborator.mockResolvedValue({ status: 201 })
 
-      const promise = autoInvite({ github: mockGithub as Octokit, context: mockContext })
-      await jest.runAllTimersAsync()
-      await promise
+      await autoInvite({ github: mockGithub as Octokit, context: mockContext })
 
       // Verify summary is printed
       expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('Execution Summary'))
