@@ -2,7 +2,6 @@
  * @bun test
  */
 
-// @ts-nocheck - Test file with extensive mocking, type assertions are complex
 import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach, jest, mock } from 'bun:test'
 import type { Octokit } from '../types/github-actions'
 import type { GitHubContext } from '../types/github-actions'
@@ -14,9 +13,12 @@ const autoInvite = autoInviteModule.default
 // Mock setTimeout to make tests faster
 const originalSetTimeout = global.setTimeout
 beforeAll(() => {
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any
   global.setTimeout = ((fn: () => void) => {
     fn()
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-explicit-any
     return 0 as any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   }) as any
 })
 
@@ -69,8 +71,11 @@ describe('auto-invite-duyet', () => {
     process.env = originalEnv
 
     // Restore console
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
     consoleLogSpy.mockRestore()
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
     consoleErrorSpy.mockRestore()
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
     consoleDebugSpy.mockRestore()
 
     // Clear all mocks
@@ -81,6 +86,7 @@ describe('auto-invite-duyet', () => {
     it('should throw error if USER_NAME is not set', async () => {
       delete process.env.USER_NAME
 
+      // eslint-disable-next-line @typescript-eslint/await-thenable
       await expect(
         autoInvite({ github: mockGithub as Octokit, context: mockContext })
       ).rejects.toThrow('USER_NAME environment variable is required')
@@ -89,6 +95,7 @@ describe('auto-invite-duyet', () => {
     it('should throw error if context.repo.owner is not available', async () => {
       mockContext.repo.owner = ''
 
+      // eslint-disable-next-line @typescript-eslint/await-thenable
       await expect(
         autoInvite({ github: mockGithub as Octokit, context: mockContext })
       ).rejects.toThrow('Unable to determine repository owner from context')
@@ -98,7 +105,7 @@ describe('auto-invite-duyet', () => {
   describe('Repository fetching', () => {
     it('should fetch all repositories with pagination', async () => {
       // Mock two pages of results
-      const listForUser = mockGithub.rest!.repos!.listForUser as ReturnType<typeof mock>
+      const listForUser = mockGithub.rest!.repos.listForUser as ReturnType<typeof mock>
       listForUser
         .mockResolvedValueOnce({
           data: Array(100).fill({
@@ -115,8 +122,7 @@ describe('auto-invite-duyet', () => {
           }),
         })
 
-      const checkCollaborator = mockGithub.rest!.repos!
-        .checkCollaborator as ReturnType<typeof mock>
+      const checkCollaborator = mockGithub.rest!.repos.checkCollaborator as ReturnType<typeof mock>
       checkCollaborator.mockResolvedValue({})
 
       await autoInvite({ github: mockGithub as Octokit, context: mockContext })
@@ -140,7 +146,7 @@ describe('auto-invite-duyet', () => {
     })
 
     it('should handle empty repository list', async () => {
-      const listForUser = mockGithub.rest!.repos!.listForUser as ReturnType<typeof mock>
+      const listForUser = mockGithub.rest!.repos.listForUser as ReturnType<typeof mock>
       listForUser.mockResolvedValue({
         data: [],
       })
@@ -148,15 +154,14 @@ describe('auto-invite-duyet', () => {
       await autoInvite({ github: mockGithub as Octokit, context: mockContext })
 
       expect(consoleLogSpy).toHaveBeenCalledWith('No repositories found.')
-      const checkCollaborator = mockGithub.rest!.repos!
-        .checkCollaborator as ReturnType<typeof mock>
+      const checkCollaborator = mockGithub.rest!.repos.checkCollaborator as ReturnType<typeof mock>
       expect(checkCollaborator).not.toHaveBeenCalled()
     })
   })
 
   describe('Collaborator checking', () => {
     beforeEach(() => {
-      const listForUser = mockGithub.rest!.repos!.listForUser as ReturnType<typeof mock>
+      const listForUser = mockGithub.rest!.repos.listForUser as ReturnType<typeof mock>
       listForUser.mockResolvedValue({
         data: [
           {
@@ -169,8 +174,7 @@ describe('auto-invite-duyet', () => {
     })
 
     it('should skip invitation if user is already a collaborator', async () => {
-      const checkCollaborator = mockGithub.rest!.repos!
-        .checkCollaborator as ReturnType<typeof mock>
+      const checkCollaborator = mockGithub.rest!.repos.checkCollaborator as ReturnType<typeof mock>
       checkCollaborator.mockResolvedValue({})
 
       await autoInvite({ github: mockGithub as Octokit, context: mockContext })
@@ -180,18 +184,17 @@ describe('auto-invite-duyet', () => {
         repo: 'test-repo',
         username: 'duyet',
       })
-      const addCollaborator = mockGithub.rest!.repos!.addCollaborator as ReturnType<typeof mock>
+      const addCollaborator = mockGithub.rest!.repos.addCollaborator as ReturnType<typeof mock>
       expect(addCollaborator).not.toHaveBeenCalled()
     })
 
     it('should invite user if not a collaborator', async () => {
       const notFoundError = new Error('Not Found') as Error & { status: number }
       notFoundError.status = 404
-      const checkCollaborator = mockGithub.rest!.repos!
-        .checkCollaborator as ReturnType<typeof mock>
+      const checkCollaborator = mockGithub.rest!.repos.checkCollaborator as ReturnType<typeof mock>
       checkCollaborator.mockRejectedValue(notFoundError)
 
-      const addCollaborator = mockGithub.rest!.repos!.addCollaborator as ReturnType<typeof mock>
+      const addCollaborator = mockGithub.rest!.repos.addCollaborator as ReturnType<typeof mock>
       addCollaborator.mockResolvedValue({
         status: 201,
       })
@@ -209,7 +212,7 @@ describe('auto-invite-duyet', () => {
 
   describe('Error handling', () => {
     beforeEach(() => {
-      const listForUser = mockGithub.rest!.repos!.listForUser as ReturnType<typeof mock>
+      const listForUser = mockGithub.rest!.repos.listForUser as ReturnType<typeof mock>
       listForUser.mockResolvedValue({
         data: [
           {
@@ -231,8 +234,7 @@ describe('auto-invite-duyet', () => {
       const networkError = new Error('Network error') as Error & { status: number }
       networkError.status = 500
 
-      const checkCollaborator = mockGithub.rest!.repos!
-        .checkCollaborator as ReturnType<typeof mock>
+      const checkCollaborator = mockGithub.rest!.repos.checkCollaborator as ReturnType<typeof mock>
       checkCollaborator
         .mockRejectedValueOnce(networkError)
         .mockRejectedValueOnce(networkError)
@@ -257,8 +259,7 @@ describe('auto-invite-duyet', () => {
         },
       }
 
-      const checkCollaborator = mockGithub.rest!.repos!
-        .checkCollaborator as ReturnType<typeof mock>
+      const checkCollaborator = mockGithub.rest!.repos.checkCollaborator as ReturnType<typeof mock>
       // repo1: rate limit then success, repo2: success
       checkCollaborator
         .mockRejectedValueOnce(rateLimitError) // repo1 first attempt
@@ -274,7 +275,7 @@ describe('auto-invite-duyet', () => {
 
   describe('Statistics tracking', () => {
     it('should track and report statistics correctly', async () => {
-      const listForUser = mockGithub.rest!.repos!.listForUser as ReturnType<typeof mock>
+      const listForUser = mockGithub.rest!.repos.listForUser as ReturnType<typeof mock>
       listForUser.mockResolvedValue({
         data: [
           { name: 'repo1', owner: { login: 'testowner' }, full_name: 'testowner/repo1' },
@@ -286,8 +287,7 @@ describe('auto-invite-duyet', () => {
       // repo1: already collaborator
       // repo2: needs invitation
       // repo3: error
-      const checkCollaborator = mockGithub.rest!.repos!
-        .checkCollaborator as ReturnType<typeof mock>
+      const checkCollaborator = mockGithub.rest!.repos.checkCollaborator as ReturnType<typeof mock>
       checkCollaborator.mockResolvedValueOnce({}) // repo1 - already member
 
       const notFoundError = new Error('Not Found') as Error & { status: number }
@@ -302,7 +302,7 @@ describe('auto-invite-duyet', () => {
         .mockRejectedValueOnce(serverError)
         .mockRejectedValueOnce(serverError) // repo3 - error with retries
 
-      const addCollaborator = mockGithub.rest!.repos!.addCollaborator as ReturnType<typeof mock>
+      const addCollaborator = mockGithub.rest!.repos.addCollaborator as ReturnType<typeof mock>
       addCollaborator.mockResolvedValue({ status: 201 })
 
       await autoInvite({ github: mockGithub as Octokit, context: mockContext })
@@ -323,21 +323,22 @@ describe('auto-invite-duyet', () => {
       process.env.DEBUG = 'true'
 
       // Re-import the module to pick up new DEBUG setting
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       const freshModule = await import(
         `../scripts/auto-invite-duyet.ts?t=${Date.now()}`
       )
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
       const freshAutoInvite = freshModule.default
 
-      const listForUser = mockGithub.rest!.repos!.listForUser as ReturnType<typeof mock>
+      const listForUser = mockGithub.rest!.repos.listForUser as ReturnType<typeof mock>
       listForUser.mockResolvedValue({
         data: [],
       })
 
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       await freshAutoInvite({ github: mockGithub as Octokit, context: mockContext })
 
       // Debug logging should be enabled
-      const checkCollaborator = mockGithub.rest!.repos!
-        .checkCollaborator as ReturnType<typeof mock>
       expect(listForUser).toHaveBeenCalled()
     })
   })

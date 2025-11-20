@@ -7,6 +7,7 @@
 
 import { Octokit } from '@octokit/rest'
 import autoInvite from './auto-invite-duyet'
+import type { Octokit as OctokitType } from '../types/github-actions'
 
 // Get GitHub token from environment
 const token = process.env.GITHUB_TOKEN
@@ -48,7 +49,7 @@ const context = {
 // Run the auto-invite script
 try {
   console.log('Starting auto-invite script...')
-  await autoInvite({ github: github as any, context })
+  await autoInvite({ github: github as unknown as OctokitType, context })
   console.log('✅ Auto-invite script completed successfully')
   process.exit(0)
 } catch (error) {
