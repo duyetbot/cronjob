@@ -38,5 +38,5 @@
     "prefer-arrow-callback": "error",
     "prefer-template": "error"
   },
-  "ignorePatterns": ["dist/", "node_modules/", "coverage/", "*.js", "*.cjs", "*.mjs"]
+  "ignorePatterns": ["dist/", "node_modules/", "coverage/", "tests/", "*.js", "*.cjs", "*.mjs"]
 }

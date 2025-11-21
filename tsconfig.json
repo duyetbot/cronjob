@@ -43,11 +43,12 @@
   },
   "include": [
     "scripts/**/*",
-    "tests/**/*"
+    "types/**/*"
   ],
   "exclude": [
     "node_modules",
     "dist",
-    "coverage"
+    "coverage",
+    "tests"
   ]
 }
