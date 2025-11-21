@@ -1,0 +1,56 @@
+{
+  "name": "cronjob",
+  "version": "2.0.0",
+  "description": "GitHub automation suite for managing repositories and collaborators - powered by TypeScript and Bun",
+  "main": "dist/auto-invite-duyet.js",
+  "type": "module",
+  "scripts": {
+    "build": "bun build scripts/auto-invite-duyet.ts --outdir dist --target node",
+    "type-check": "tsc --noEmit",
+    "test": "bun test",
+    "test:watch": "bun test --watch",
+    "test:coverage": "bun test --coverage",
+    "lint": "eslint . --ext .ts,.tsx",
+    "lint:fix": "eslint . --ext .ts,.tsx --fix",
+    "format": "prettier --write \"**/*.{ts,tsx,json,md,yml,yaml}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,json,md,yml,yaml}\"",
+    "check": "bun run type-check && bun run lint && bun run format:check",
+    "ci": "bun run check && bun test"
+  },
+  "keywords": [
+    "github",
+    "automation",
+    "cron",
+    "github-actions",
+    "collaborators",
+    "repository-management",
+    "typescript",
+    "bun"
+  ],
+  "author": "duyetbot",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/duyetbot/cronjob.git"
+  },
+  "engines": {
+    "bun": ">=1.0.0"
+  },
+  "dependencies": {
+    "@octokit/rest": "^20.1.1"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.1.13",
+    "@types/node": "^20.17.9",
+    "@typescript-eslint/eslint-plugin": "^7.18.0",
+    "@typescript-eslint/parser": "^7.18.0",
+    "bun-types": "^1.1.34",
+    "eslint": "^8.57.1",
+    "eslint-config-prettier": "^9.1.0",
+    "prettier": "^3.3.3",
+    "typescript": "^5.7.2"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  }
+}
